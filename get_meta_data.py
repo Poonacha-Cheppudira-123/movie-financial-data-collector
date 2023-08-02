@@ -2,23 +2,27 @@ from bs4 import BeautifulSoup
 import os
 
 
-rawfile_names_list = os.listdir("rawfiles/")
+def retreive_all_soup() -> list:
+    """Retrieve BeautifulSoup objects from HTML files in the 'rawfiles/' directory."""
+
+    soup_list = []
+    rawfile_names_list = os.listdir("rawfiles/")
+    for rawfile_name in rawfile_names_list:
+        with open(f"rawfiles/{rawfile_name}", "r", encoding="utf-8") as f:
+            content = f.read()
+            soup = BeautifulSoup(content, "html.parser")
+            soup_list.append(soup)
+    print("\nSoup List Finalized...")
+    return soup_list
 
 
-count = 1
+def extract_financial_data(soup: BeautifulSoup) -> list:
+    """Extracts financial data from the given BeautifulSoup object and returns it as a dictionary."""
 
-for rawfile_name in rawfile_names_list:
-    with open(f"rawfiles/{rawfile_name}", "r", encoding="utf-8") as f:
-        content = f.read()
-        soup = BeautifulSoup(content, "html.parser")
+    financial_data_dict = {}
 
-    # Movie Title
-    try:
-        movie_title = soup.find("h1", class_="a-size-extra-large").text
-    except:
-        movie_title = "Not Found"
+    movie_title = soup.find("h1", class_="a-size-extra-large").text.strip()
 
-    # Domestic, International, Worldwide Profits
     try:
         rollout_table = soup.find_all("span", class_="a-size-medium a-text-bold")
     except:
@@ -29,14 +33,6 @@ for rawfile_name in rawfile_names_list:
         international_profit = rollout_table[1].text.strip()
         worldwide_profit = rollout_table[2].text.strip()
 
-    if domestic_profit == "":
-        domestic_profit = "Domestic Profit Not Found"
-    if international_profit == "":
-        international_profit = "International Profit Not Found"
-    if worldwide_profit == "":
-        worldwide_profit = "Worldwide Profit Not Found"
-
-    # Release Date, Opening Profits, Gross Profits
     try:
         domestic_table = soup.find_all(
             "table",
@@ -51,35 +47,35 @@ for rawfile_name in rawfile_names_list:
         opening_profit = domestic_table_row[2].text.strip()
         gross_profit = domestic_table_row[3].text.strip()
 
-        # release_date = (
-        #     domestic_table[0]
-        #     .find_all("tr")[2]
-        #     .find_all("td", class_="a-align-center")[1]
-        #     .text.strip()
-        # )
-        # opening_profit = (
-        #     domestic_table[0]
-        #     .find_all("tr")[2]
-        #     .find_all("td", class_="a-text-right a-align-center")[0]
-        #     .text.strip()
-        # )
-        # gross_profit = (
-        #     domestic_table[0]
-        #     .find_all("tr")[2]
-        #     .find_all("td", class_="a-text-right a-align-center")[1]
-        #     .text.strip()
-        # )
+    financial_data_dict = {
+        "movie_title": movie_title,
+        "domestic_profit": domestic_profit,
+        "international_profit": international_profit,
+        "worldwide_profit": worldwide_profit,
+        "release_date": release_date,
+        "opening_profit": opening_profit,
+        "gross_profit": gross_profit,
+    }
 
-    if release_date == "":
-        release_date = "–"
-    if opening_profit == "":
-        opening_profit = "Opening Profit Not Found"
-    if gross_profit == "":
-        gross_profit = "Gross Profit Not Found"
+    return financial_data_dict
+
+
+def verify_and_write_data(financial_data_dict: dict) -> None:
+    """Verify and write financial data to 'financial_data.txt' file with '-' for missing or empty values."""
+
+    for key in financial_data_dict:
+        if financial_data_dict[key] == "" or financial_data_dict[key] == "–":
+            financial_data_dict[key] = None
+
+    movie_title = financial_data_dict.get("movie_title")
+    domestic_profit = financial_data_dict.get("domestic_profit")
+    international_profit = financial_data_dict.get("international_profit")
+    worldwide_profit = financial_data_dict.get("worldwide_profit")
+    release_date = financial_data_dict.get("release_date")
+    opening_profit = financial_data_dict.get("opening_date")
+    gross_profit = financial_data_dict.get("gross_profit")
 
     with open("financial_data.txt", "a", encoding="utf-8") as f:
         f.write(
-            f"Title {count}: {movie_title}\nDomestic Profit: {domestic_profit}\nInternational Profit: {international_profit}\nWorldwide Profit: {worldwide_profit}\nRelease Date: {release_date}\nOpening Profit: {opening_profit}\nGross Profit: {gross_profit}\n\n"
+            f"Title: {movie_title}\nDomestic Profit: {domestic_profit}\nInternational Profit: {international_profit}\nWorldwide Profit: {worldwide_profit}\nRelease Date: {release_date}\nOpening Profit: {opening_profit}\nGross Profit: {gross_profit}\n\n"
         )
-
-    count += 1

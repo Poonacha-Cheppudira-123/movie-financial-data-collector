@@ -3,17 +3,12 @@ from bs4 import BeautifulSoup
 
 
 def create_movie_links_list(headers: dict) -> list:
-    """
-    Scrape movie links from Box Office Mojo for the years 1977 to 2023.
-    Args:
-        headers (dict): A dictionary containing custom headers to be used for HTTP requests.
-    Returns:
-        movie_link (list): A list of strings representing the movie links.
-    """
+    """Scrape movie links from Box Office Mojo for the years 1977 to 2023."""
 
     years_list = [str(year) for year in range(1977, 2024)]
     movie_links = []
 
+    count = 1
     for year in years_list:
         URL = f"https://www.boxofficemojo.com/year/world/{year}/"
 
@@ -24,26 +19,30 @@ def create_movie_links_list(headers: dict) -> list:
         tr_tags.remove(tr_tags[0])
         for tr_tag in tr_tags:
             link = "https://www.boxofficemojo.com/" + tr_tag.a["href"]
+            print(f"Movie Link {count}: {link}")
             movie_links.append(link)
+            count += 1
 
     return movie_links
 
 
 def get_raw_files(headers: dict) -> None:
-    """
-    Fetch raw HTML files for movies from Box Office Mojo based on their links.
-    Args:
-        headers (dict): A dictionary containing custom headers to be used for HTTP requests.
-    Returns:
-        None
-    """
+    """Fetch raw HTML files for movies from Box Office Mojo based on their links."""
 
     movie_links = create_movie_links_list(headers)
 
-    count = 1
     for movie_link in movie_links:
         content = requests.get(movie_link, headers=headers)
         soup = BeautifulSoup(content.text, "html.parser")
-        with open(f"rawfiles/movie-{count}.html", "w", encoding="utf-8") as f:
+        movie_title = soup.find("h1", class_="a-size-extra-large").text.strip()
+
+        file_name = ""
+        for ch in movie_title.lower():
+            if ch.isalnum() or ch == " ":
+                file_name += ch
+        file_name = file_name.replace(" ", "–")
+
+        with open(f"rawfiles/{file_name}.html", "w", encoding="utf-8") as f:
             f.write(str(soup))
-        count += 1
+
+    print(f"\nRaw Files Finished Extracting...")
